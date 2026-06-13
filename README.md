@@ -211,8 +211,6 @@ Stores:
 * User Records
 * Cover Metadata
 
----
-
 ## 🪜 Installation Guide
 
 ### Step 1: Clone Repository
