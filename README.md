@@ -48,9 +48,6 @@ CoverComposer provides a personalized entertainment experience through Artificia
 
 ## **📂 Project Structure**
 
-## 📂 Project Structure
-
-```text
 CoverComposer/
 │
 ├── backend/
@@ -72,13 +69,13 @@ CoverComposer/
    ├── login.html
    └── welcome.html
 
-## **🎯 Features Explained**
+## 🎯 Features Explained
 
-### **1️⃣ User Authentication**
+### 1️⃣ User Authentication
 
 Users can securely register and log in to access personalized features.
 
-#### **Functions**
+#### Functions
 
 * User Registration
 * Login Validation
@@ -86,11 +83,11 @@ Users can securely register and log in to access personalized features.
 * Secure Account Access
 
 
-### **2️⃣ Mood Detection**
+### 2️⃣ Mood Detection
 
 The system detects emotions using webcam-based facial expression analysis.
 
-#### **Supported Emotions**
+#### Supported Emotions
 
 * Happy 😊
 * Sad 😔
@@ -100,7 +97,7 @@ The system detects emotions using webcam-based facial expression analysis.
 * Surprise 😲
 * Fear 😨
 
-### **3️⃣ Music Recommendation Engine**
+### 3️⃣ Music Recommendation Engine
 
 Based on the detected or selected mood, the system recommends suitable music tracks.
 
@@ -269,7 +266,7 @@ http://127.0.0.1:5000
 
 ## 👩‍💻 Author
 
-### Jahnavi Katragadda
+### Sukhavasi Balasri
 
 Fourth-Year Engineering Student
 
