@@ -48,6 +48,7 @@ CoverComposer provides a personalized entertainment experience through Artificia
 
 ## **📂 Project Structure**
 
+```text
 CoverComposer/
 │
 ├── backend/
@@ -69,6 +70,7 @@ CoverComposer/
    ├── login.html
    └── welcome.html
 
+```
 ## 🎯 Features Explained
 
 ### 1️⃣ User Authentication
