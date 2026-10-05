@@ -21,7 +21,7 @@ CoverComposer provides a personalized entertainment experience through Artificia
 
 ✅ Mood-Based Music Recommendation
 
-✅ Procedurally generated music tailored to each mood
+✅ AI-generated vocal songs tailored to each mood
 
 ✅ AI-Powered Album Cover Generation
 
@@ -109,9 +109,9 @@ Based on the detected or selected mood, the system recommends suitable music tra
 * Music Playback
 * Enhanced Listening Experience
 
-### **4️⃣ Mood Music Generation**
+### **4️⃣ AI Song Generation**
 
-Selecting or detecting a mood asks the Flask service to synthesize a unique 16-second soundtrack from that mood's tempo, chord progression, and melody. The generated audio loops in the player. This is local procedural synthesis and does not require an external music-generation API.
+Selecting or detecting a mood asks the Flask service to generate an original 60-second song with vocals using ElevenLabs Music. Each supported mood has its own vocal and lyrical direction, and the generated MP3 loops in the player. This requires an ElevenLabs API key and consumes the account's music-generation credits.
 
 ### **5️⃣ AI Album Cover Generation**
 
@@ -260,9 +260,9 @@ http://127.0.0.1:5000
 
 The Flask server serves frontend files from the repository root for a single-host deployment. For the configured Vercel + Render deployment:
 
-1. Deploy this repository to Render as a web service with build command `pip install -r requirements.txt` and start command `gunicorn server:app`.
+1. Deploy this repository to Render as a web service with build command `pip install -r requirements.txt` and start command `gunicorn --timeout 210 server:app` (song generation can take longer than Gunicorn's default timeout).
 2. Deploy the repository to Vercel. `vercel.json` proxies `/api/*` and `/covers/*` to the Render service so browser requests and session cookies remain same-origin.
-3. Set `FLASK_SECRET_KEY` to a long, random secret on Render. Set `GEMINI_API_KEY` if Gemini artwork is desired; without it, cover generation uses the built-in local artwork generator.
+3. Set `FLASK_SECRET_KEY` to a long, random secret and `ELEVENLABS_API_KEY` to an ElevenLabs API key with Music access on Render. Set `GEMINI_API_KEY` if Gemini artwork is desired; without it, cover generation uses the built-in local artwork generator.
 4. For persistent SQLite data and generated artwork on Render, attach a persistent disk and set `APP_DATA_DIR` to its mount path (for example, `/var/data`). Without a persistent disk, local files may be lost when the service is replaced.
 
 For direct browser-to-Render API requests instead of the Vercel proxy, set `window.API_BASE_URL` in `api-config.js` to the Render service URL and configure `FRONTEND_ORIGINS` on Render as a comma-separated list of exact frontend origins. Render uses secure cross-site session cookies; some browsers block third-party cookies, so the Vercel proxy is recommended.

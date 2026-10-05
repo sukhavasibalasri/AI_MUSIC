@@ -430,7 +430,7 @@ async function generateMusic() {
     const audio = document.getElementById("audioPlayer");
     const status = document.getElementById("musicStatus");
     const requestId = ++musicRequestId;
-    status.textContent = `Composing a ${selectedMood} soundtrack...`;
+    status.textContent = `Generating your ${selectedMood} AI song with vocals...`;
 
     try {
         const response = await apiFetch("/api/generate_music", {
@@ -440,7 +440,7 @@ async function generateMusic() {
         });
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.error || "Unable to generate music.");
+            throw new Error(data.error || "Unable to generate your AI song.");
         }
         if (requestId !== musicRequestId) return;
 
@@ -451,14 +451,14 @@ async function generateMusic() {
         }
         try {
             await audio.play();
-            status.textContent = `Now playing: ${data.mood} mood music`;
+            status.textContent = `Now playing: your ${data.mood} AI song`;
         } catch (error) {
             if (error.name !== "NotAllowedError") throw error;
-            status.textContent = `Your ${data.mood} soundtrack is ready. Press play to listen.`;
+            status.textContent = `Your ${data.mood} AI song is ready. Press play to listen.`;
         }
     } catch (error) {
         if (requestId !== musicRequestId) return;
-        status.textContent = "Music generation failed. Please try again.";
+        status.textContent = error.message;
         console.error("Mood music generation error:", error);
     }
 }

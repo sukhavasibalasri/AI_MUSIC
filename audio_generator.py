@@ -1,7 +1,8 @@
-import math
+import json
 import os
 import secrets
-import struct
+import urllib.error
+import urllib.request
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -10,116 +11,94 @@ MUSIC_DIR = os.path.join(
     "music"
 )
 
-MOOD_TRACKS = {
-    "happy": {
-        "tempo": 112,
-        "subdivision": 2,
-        "progression": [
-            (261.63, 329.63, 392.00),
-            (220.00, 261.63, 329.63),
-            (174.61, 220.00, 261.63),
-            (196.00, 246.94, 293.66),
-        ],
-        "melody": (523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 392.00),
-    },
-    "sad": {
-        "tempo": 68,
-        "subdivision": 1,
-        "progression": [
-            (220.00, 261.63, 329.63),
-            (196.00, 246.94, 293.66),
-            (174.61, 220.00, 261.63),
-            (196.00, 233.08, 293.66),
-        ],
-        "melody": (440.00, 392.00, 349.23, 329.63, 293.66, 329.63, 392.00, 349.23),
-    },
-    "relaxed": {
-        "tempo": 76,
-        "subdivision": 1,
-        "progression": [
-            (293.66, 349.23, 440.00),
-            (261.63, 329.63, 392.00),
-            (220.00, 293.66, 349.23),
-            (246.94, 293.66, 369.99),
-        ],
-        "melody": (587.33, 523.25, 440.00, 392.00, 440.00, 523.25, 493.88, 440.00),
-    },
-    "romantic": {
-        "tempo": 84,
-        "subdivision": 1,
-        "progression": [
-            (174.61, 220.00, 261.63),
-            (196.00, 246.94, 293.66),
-            (146.83, 196.00, 246.94),
-            (164.81, 220.00, 261.63),
-        ],
-        "melody": (523.25, 493.88, 440.00, 392.00, 440.00, 493.88, 587.33, 523.25),
-    },
-    "energetic": {
-        "tempo": 128,
-        "subdivision": 2,
-        "progression": [
-            (329.63, 415.30, 493.88),
-            (261.63, 329.63, 392.00),
-            (293.66, 369.99, 440.00),
-            (220.00, 277.18, 329.63),
-        ],
-        "melody": (659.25, 783.99, 987.77, 783.99, 880.00, 783.99, 659.25, 493.88),
-    },
+MOOD_SONGS = {
+    "happy": (
+        "Create an original short upbeat pop song with clearly sung vocals and a catchy chorus. "
+        "Mood: joyful, hopeful, and celebratory. Bright piano, warm bass, crisp drums, and a memorable melody. "
+        "Write and sing original lyrics about finding sunshine and sharing a happy moment. "
+        "Use a friendly expressive lead vocal. Complete song, not an instrumental."
+    ),
+    "sad": (
+        "Create an original short emotional ballad with clearly sung vocals and a memorable chorus. "
+        "Mood: wistful and vulnerable, but gently hopeful. Intimate piano, soft strings, and restrained drums. "
+        "Write and sing original lyrics about working through a difficult day and finding the strength to continue. "
+        "Use a tender expressive lead vocal. Complete song, not an instrumental."
+    ),
+    "relaxed": (
+        "Create an original short relaxed song with clearly sung vocals and a gentle chorus. "
+        "Mood: peaceful, warm, and unhurried. Soft acoustic guitar, mellow keys, and subtle percussion. "
+        "Write and sing original lyrics about slowing down, breathing, and enjoying a quiet moment. "
+        "Use a soft intimate lead vocal. Complete song, not an instrumental."
+    ),
+    "romantic": (
+        "Create an original short romantic song with clearly sung vocals and a heartfelt chorus. "
+        "Mood: tender and affectionate. Warm piano, soft strings, gentle bass, and a flowing melody. "
+        "Write and sing original lyrics about two people sharing a meaningful moment together. "
+        "Use an expressive intimate lead vocal. Complete song, not an instrumental."
+    ),
+    "energetic": (
+        "Create an original short high-energy pop-rock song with clearly sung vocals and an anthemic chorus. "
+        "Mood: bold, driven, and empowering. Punchy drums, electric guitar, strong bass, and a dynamic melody. "
+        "Write and sing original lyrics about taking action and moving forward with confidence. "
+        "Use a powerful expressive lead vocal. Complete song, not an instrumental."
+    ),
 }
 
 
-def generate_ambient_track(mood):
+class SongGenerationError(Exception):
+    pass
+
+
+class SongGenerationNotConfigured(SongGenerationError):
+    pass
+
+
+def generate_ai_song(mood):
     mood = mood.lower()
-    if mood not in MOOD_TRACKS:
-        raise ValueError(f"Unsupported music mood: {mood}")
+    if mood not in MOOD_SONGS:
+        raise ValueError(f"Unsupported song mood: {mood}")
 
-    os.makedirs(MUSIC_DIR, exist_ok=True)
-    preset = MOOD_TRACKS[mood]
-    sample_rate = 22050
-    duration = 16.0
-    num_samples = int(sample_rate * duration)
-    beat_duration = 60.0 / preset["tempo"]
-    note_duration = beat_duration / preset["subdivision"]
-    pcm_data = bytearray()
+    api_key = os.environ.get("ELEVENLABS_API_KEY")
+    if not api_key:
+        raise SongGenerationNotConfigured(
+            "AI vocal songs are not configured yet. Add ELEVENLABS_API_KEY to the Render service environment."
+        )
 
-    for index in range(num_samples):
-        time = index / sample_rate
-        beat = time / beat_duration
-        chord = preset["progression"][int(beat // 4) % len(preset["progression"])]
-        melody_index = int(time / note_duration) % len(preset["melody"])
-        melody_phase = (time % note_duration) / note_duration
-
-        pad = sum(
-            math.sin(2 * math.pi * frequency * time) * 0.7
-            + math.sin(2 * math.pi * frequency * 1.003 * time) * 0.3
-            for frequency in chord
-        ) / len(chord)
-        melody_envelope = min(1.0, melody_phase * 12) * max(0.0, 1.0 - melody_phase)
-        melody = math.sin(2 * math.pi * preset["melody"][melody_index] * time)
-        pulse = 0.88 + 0.12 * math.sin(2 * math.pi * time * preset["tempo"] / 240)
-
-        envelope = min(1.0, time / 1.5, (duration - time) / 1.5)
-        sample = (pad * 0.55 + melody * melody_envelope * 0.24) * pulse * max(0.0, envelope)
-        pcm_data.extend(struct.pack("<h", max(-32768, min(32767, int(sample * 22000)))))
-
-    data_size = len(pcm_data)
-    header = (
-        b"RIFF"
-        + struct.pack("<I", 36 + data_size)
-        + b"WAVEfmt "
-        + struct.pack("<IHHIIHH", 16, 1, 1, sample_rate, sample_rate * 2, 2, 16)
-        + b"data"
-        + struct.pack("<I", data_size)
+    request_body = json.dumps({
+        "model_id": "music_v2_5",
+        "music_length_ms": 60000,
+        "force_instrumental": False,
+        "prompt": MOOD_SONGS[mood],
+    }).encode("utf-8")
+    generation_request = urllib.request.Request(
+        "https://api.elevenlabs.io/v1/music?output_format=mp3_44100_128",
+        data=request_body,
+        headers={
+            "Content-Type": "application/json",
+            "xi-api-key": api_key,
+        },
+        method="POST",
     )
 
-    filename = f"mood_{mood}_{secrets.token_hex(8)}.wav"
+    try:
+        with urllib.request.urlopen(generation_request, timeout=180) as response:
+            song_audio = response.read()
+    except urllib.error.HTTPError as error:
+        detail = error.read(1000).decode("utf-8", errors="replace")
+        raise SongGenerationError(
+            f"AI song service returned HTTP {error.code}: {detail}"
+        ) from error
+    except urllib.error.URLError as error:
+        raise SongGenerationError(
+            f"Could not connect to the AI song service: {error.reason}"
+        ) from error
+
+    if not song_audio:
+        raise SongGenerationError("The AI song service returned an empty audio track.")
+
+    os.makedirs(MUSIC_DIR, exist_ok=True)
+    filename = f"ai_song_{mood}_{secrets.token_hex(8)}.mp3"
     with open(os.path.join(MUSIC_DIR, filename), "wb") as track:
-        track.write(header)
-        track.write(pcm_data)
+        track.write(song_audio)
 
     return f"/music/{filename}"
-
-
-if __name__ == "__main__":
-    print(f"Generated track: {generate_ambient_track('relaxed')}")
