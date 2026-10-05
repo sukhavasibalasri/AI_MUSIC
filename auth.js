@@ -38,7 +38,7 @@ function signup() {
 
     displayMessage("Creating account...");
 
-    fetch("/api/auth/signup", {
+    apiFetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, password: password })
@@ -74,7 +74,7 @@ function login() {
 
     displayMessage("Logging in...");
 
-    fetch("/api/auth/login", {
+    apiFetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, password: password })

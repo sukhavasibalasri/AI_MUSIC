@@ -44,31 +44,28 @@ CoverComposer provides a personalized entertainment experience through Artificia
 | AI Image Generation  | Google Gemini AI         |
 | Emotion Detection    | Face API.js              |
 | Authentication       | Flask Sessions           |
-| Server               | Flask Development Server |
+| Server               | Gunicorn (production)    |
 
 ## **📂 Project Structure**
 
 ```text
-CoverComposer/
-│
-├── backend/
-│   ├── audio_generator.py
-│   ├── cover_generator.py
-│   ├── database.py
-│   ├── database.db
-│   └── server.py
-│
-├── frontend/
-   ├── covers/
-   ├── models/
-   ├── songs/
-   ├── auth.js
-   ├── firebase.js
-   ├── script.js
-   ├── style.css
-   ├── index.html
-   ├── login.html
-   └── welcome.html
+AI_MUSIC/
+├── server.py
+├── database.py
+├── cover_generator.py
+├── audio_generator.py
+├── api-config.js
+├── api.js
+├── auth.js
+├── script.js
+├── index.html
+├── login.html
+├── welcome.html
+├── style.css
+├── *_model-weights_manifest.json
+├── *_model-shard1
+├── *.mp3
+└── requirements.txt
 
 ```
 ## 🎯 Features Explained
@@ -216,8 +213,8 @@ Stores:
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/covercomposer.git
-cd covercomposer
+git clone https://github.com/sukhavasibalasri/AI_MUSIC.git
+cd AI_MUSIC
 ```
 
 ### Step 2: Create Virtual Environment
@@ -246,12 +243,25 @@ pip install -r requirements.txt
 
 ### Step 5: Run Application
 
-bash
-python app.py
+```bash
+python server.py
+```
 
 ### Step 6: Open Browser
 
-http://127.0.0.1:8000
+http://127.0.0.1:5000
+
+## ☁️ Deployment (Render + Vercel)
+
+The Flask server serves frontend files from the repository root for a single-host deployment. To host the static frontend separately on Vercel and the API on Render:
+
+1. Deploy this repository to Render as a web service with build command `pip install -r requirements.txt` and start command `gunicorn server:app`.
+2. Set `FRONTEND_ORIGINS` on Render to the exact Vercel origin(s), comma-separated, with no path (for example, `https://your-app.vercel.app`). Set `SESSION_COOKIE_SAMESITE=None` and `SESSION_COOKIE_SECURE=true` for cross-site session cookies.
+3. Set `FLASK_SECRET_KEY` to a long, random secret. Set `GEMINI_API_KEY` if Gemini artwork is desired; without it, cover generation uses the built-in local artwork generator.
+4. Set `window.API_BASE_URL` in `api-config.js` to the Render service URL (for example, `https://your-service.onrender.com`) before deploying the static files to Vercel. Keep the trailing slash optional.
+5. For persistent SQLite data and generated artwork on Render, attach a persistent disk and set `APP_DATA_DIR` to its mount path (for example, `/var/data`). Without a persistent disk, local files may be lost when the service is replaced.
+
+The frontend sends credentialed API requests; Flask CORS is restricted to `FRONTEND_ORIGINS`, and Render uses secure cross-site session cookies. Some browsers block third-party cookies between separate Vercel and Render domains. If session cookies are blocked, proxy `/api/*` and `/covers/*` through the Vercel domain so the browser sees same-origin requests.
 
 ## 💡 Future Enhancements
 

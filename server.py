@@ -1,16 +1,38 @@
 from flask import Flask, request, jsonify, session, send_from_directory
 import os
 import secrets
+from flask_cors import CORS
 from database import init_db, create_user, verify_user, add_history, get_history, add_cover, get_covers
 from cover_generator import generate_album_cover
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.abspath(os.environ.get("APP_DATA_DIR", BASE_DIR))
+COVERS_DIR = os.path.join(DATA_DIR, "covers")
+os.makedirs(DATA_DIR, exist_ok=True)
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(24))
+app.config.update(
+    SESSION_COOKIE_SAMESITE=os.environ.get(
+        "SESSION_COOKIE_SAMESITE",
+        "None" if os.environ.get("RENDER") else "Lax"
+    ),
+    SESSION_COOKIE_SECURE=os.environ.get(
+        "SESSION_COOKIE_SECURE",
+        "true" if os.environ.get("RENDER") else "false"
+    ).lower() == "true",
+)
+
+allowed_origins = [
+    origin.strip().rstrip("/")
+    for origin in os.environ.get("FRONTEND_ORIGINS", "").split(",")
+    if origin.strip()
+]
+if allowed_origins:
+    CORS(app, resources={r"/api/*": {"origins": allowed_origins}}, supports_credentials=True)
 
 # Initialize database on startup
-DB_PATH = os.path.join(os.path.dirname(__file__), "database.db")
+DB_PATH = os.path.join(DATA_DIR, "database.db")
 init_db(DB_PATH)
 
 @app.route("/")
@@ -97,7 +119,7 @@ def generate_cover_api():
     data = request.get_json() or {}
     mood = data.get("mood", "happy")
     song_title = data.get("song_title", "My AI Rhythm")
-    api_key = data.get("api_key") or session.get("gemini_api_key")
+    api_key = os.environ.get("GEMINI_API_KEY")
     
     cover_url = generate_album_cover(mood, song_title, session["user_email"], DB_PATH, api_key=api_key)
     add_cover(session["user_id"], mood, cover_url, DB_PATH)
@@ -111,6 +133,10 @@ def get_covers_api():
         
     covers = get_covers(session["user_id"], DB_PATH)
     return jsonify({"covers": covers}), 200
+
+@app.route("/covers/<path:filename>")
+def serve_cover(filename):
+    return send_from_directory(COVERS_DIR, filename)
 
 # Fallback to serve static files correctly
 @app.route("/<path:path>")

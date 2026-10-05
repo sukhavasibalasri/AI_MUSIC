@@ -4,8 +4,11 @@ import random
 import datetime
 import google.generativeai as genai
 
-# Ensure covers are stored in the repository root's covers directory
-COVERS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "covers")
+# APP_DATA_DIR can point to a persistent disk mount in production.
+COVERS_DIR = os.path.join(
+    os.path.abspath(os.environ.get("APP_DATA_DIR", os.path.dirname(os.path.abspath(__file__)))),
+    "covers"
+)
 
 def get_font(font_name, size):
     # Standard font paths on Windows

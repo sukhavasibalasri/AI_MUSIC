@@ -1,9 +1,9 @@
 const musicDB = {
-    happy: "songs/happy.mp3",
-    sad: "songs/sad.mp3",
-    romantic: "songs/romantic.mp3",
-    relaxed: "songs/relaxed.mp3",
-    energetic: "songs/energetic.mp3"
+    happy: "happy.mp3",
+    sad: "sad.mp3",
+    romantic: "romantic.mp3",
+    relaxed: "relaxed.mp3",
+    energetic: "energetic.mp3"
 };
 
 const moodTrackTitles = {
@@ -39,7 +39,7 @@ window.onload = function() {
     document.getElementById("userDisplay").innerText = email;
     
     // Check if session exists on backend
-    fetch("/api/auth/session")
+    apiFetch("/api/auth/session")
         .then(res => res.json())
         .then(data => {
             if (!data.logged_in) {
@@ -54,12 +54,6 @@ window.onload = function() {
             // Offline fallback
         });
 
-    // Load API Key from local storage
-    const storedKey = localStorage.getItem("gemini_api_key");
-    if (storedKey) {
-        document.getElementById("geminiKeyInput").value = storedKey;
-    }
-
     // Load History & Gallery from SQLite backend
     loadHistory();
     loadGallery();
@@ -70,11 +64,6 @@ window.onload = function() {
     // Listen for audio player events
     setupAudioPlayerListeners();
 };
-
-function saveApiKey() {
-    const key = document.getElementById("geminiKeyInput").value.trim();
-    localStorage.setItem("gemini_api_key", key);
-}
 
 // ================= NAVIGATION / TABS =================
 
@@ -104,7 +93,7 @@ function selectMode(mode) {
 // ================= AUTH SESSION =================
 
 function logout() {
-    fetch("/api/auth/logout", { method: "POST" })
+    apiFetch("/api/auth/logout", { method: "POST" })
         .then(() => {
             localStorage.removeItem("currentUser");
             window.location.href = "login.html";
@@ -161,8 +150,8 @@ async function startCamera() {
         
         if (!modelsLoaded) {
             // Load Face API models from local server
-            await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
-            await faceapi.nets.faceExpressionNet.loadFromUri('/models');
+            await faceapi.nets.tinyFaceDetector.loadFromUri("/");
+            await faceapi.nets.faceExpressionNet.loadFromUri("/");
             modelsLoaded = true;
         }
         
@@ -470,15 +459,12 @@ function generateFromScenario() {
     downloadBtn.disabled = true;
     
     const songTitle = moodTrackTitles[selectedMood] || "My Vibe Rhythm";
-    const apiKey = localStorage.getItem("gemini_api_key") || "";
-
-    fetch("/api/generate_cover", {
+    apiFetch("/api/generate_cover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
             mood: selectedMood,
-            song_title: scenario,
-            api_key: apiKey
+            song_title: scenario
         })
     })
     .then(res => res.json())
@@ -487,7 +473,7 @@ function generateFromScenario() {
         
         if (data.cover_url) {
             generatedCoverUrl = data.cover_url;
-            document.getElementById("albumCoverImg").src = data.cover_url;
+            document.getElementById("albumCoverImg").src = apiUrl(data.cover_url);
             downloadBtn.disabled = false;
             
             // Refresh Art Gallery grid
@@ -504,7 +490,7 @@ function downloadAlbumCover() {
     if (!generatedCoverUrl) return;
     
     const link = document.createElement("a");
-    link.href = generatedCoverUrl;
+    link.href = apiUrl(generatedCoverUrl);
     link.download = `art_cover_${selectedMood}.png`;
     document.body.appendChild(link);
     link.click();
@@ -622,7 +608,7 @@ function startSynthLoop(mood) {
 // ================= BACKEND REST API HELPERS =================
 
 function loadHistory() {
-    fetch("/api/history")
+    apiFetch("/api/history")
         .then(res => res.json())
         .then(data => {
             const list = document.getElementById("historyList");
@@ -651,7 +637,7 @@ function loadHistory() {
 }
 
 function saveHistory(mood) {
-    fetch("/api/history", {
+    apiFetch("/api/history", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mood: mood })
@@ -663,7 +649,7 @@ function saveHistory(mood) {
 }
 
 function loadGallery() {
-    fetch("/api/covers")
+    apiFetch("/api/covers")
         .then(res => res.json())
         .then(data => {
             const grid = document.getElementById("coversList");
@@ -681,11 +667,11 @@ function loadGallery() {
                 card.onclick = () => {
                     // Load this past cover into studio view
                     generatedCoverUrl = item.cover_path;
-                    document.getElementById("albumCoverImg").src = item.cover_path;
+                    document.getElementById("albumCoverImg").src = apiUrl(item.cover_path);
                     setVibe(item.mood);
                 };
                 
-                card.innerHTML = `<img src="${item.cover_path}" alt="Saved Cover">`;
+                card.innerHTML = `<img src="${apiUrl(item.cover_path)}" alt="Saved Cover">`;
                 grid.appendChild(card);
             });
         })

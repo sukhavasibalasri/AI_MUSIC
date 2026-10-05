@@ -40,14 +40,6 @@
                 </div>
             </div>
             
-            <div class="settings-section" style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
-                <h3>⚙️ Studio Settings</h3>
-                <div style="display:flex; flex-direction:column; gap:10px; margin-top: 12px;">
-                    <label style="font-size:12px; color:var(--text-secondary); font-weight: 500;">Google Gemini API Key:</label>
-                    <input id="geminiKeyInput" type="password" placeholder="AIzaSy..." style="width:100%; padding:10px 12px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:white; font-size:12px; outline: none;" onchange="saveApiKey()">
-                    <span style="font-size:10px; color:var(--text-secondary); line-height: 1.4;">Saved locally in your browser. Enables real generative AI graphics!</span>
-                </div>
-            </div>
         </section>
 
         <!-- COLUMN 2: MOOD CONTROLLER -->
@@ -182,6 +174,8 @@
     <audio id="audioPlayer"></audio>
 
     <!-- MAIN CLIENT LOGIC -->
+    <script src="api-config.js"></script>
+    <script src="api.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
