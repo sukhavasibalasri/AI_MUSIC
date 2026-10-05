@@ -21,6 +21,8 @@ CoverComposer provides a personalized entertainment experience through Artificia
 
 ✅ Mood-Based Music Recommendation
 
+✅ Procedurally generated music tailored to each mood
+
 ✅ AI-Powered Album Cover Generation
 
 ✅ Listening History Management
@@ -107,7 +109,11 @@ Based on the detected or selected mood, the system recommends suitable music tra
 * Music Playback
 * Enhanced Listening Experience
 
-### **4️⃣ AI Album Cover Generation**
+### **4️⃣ Mood Music Generation**
+
+Selecting or detecting a mood asks the Flask service to synthesize a unique 16-second soundtrack from that mood's tempo, chord progression, and melody. The generated audio loops in the player. This is local procedural synthesis and does not require an external music-generation API.
+
+### **5️⃣ AI Album Cover Generation**
 
 Google Gemini AI generates unique album cover artwork based on the user's mood and music theme.
 
@@ -118,8 +124,7 @@ Google Gemini AI generates unique album cover artwork based on the user's mood a
 * Creative Album Covers
 * Real-Time Generation
 
-
-### **5️⃣ History Management**
+### **6️⃣ History Management**
 
 The application stores user activity for future reference.
 
@@ -130,7 +135,7 @@ The application stores user activity for future reference.
 * Generated Covers
 * Date and Time Records
 
-### **6️⃣ Art Gallery**
+### **7️⃣ Art Gallery**
 
 Users can revisit previously generated album covers.
 

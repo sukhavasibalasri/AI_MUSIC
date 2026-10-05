@@ -4,6 +4,7 @@ import secrets
 from flask_cors import CORS
 from database import init_db, create_user, verify_user, add_history, get_history, add_cover, get_covers
 from cover_generator import generate_album_cover
+from audio_generator import MOOD_TRACKS, generate_ambient_track
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.abspath(os.environ.get("APP_DATA_DIR", BASE_DIR))
@@ -137,9 +138,28 @@ def get_covers_api():
     covers = get_covers(session["user_id"], DB_PATH)
     return jsonify({"covers": covers}), 200
 
+@app.route("/api/generate_music", methods=["POST"])
+def generate_music_api():
+    if "user_id" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    mood = data.get("mood")
+    if not isinstance(mood, str) or mood.lower() not in MOOD_TRACKS:
+        return jsonify({"error": "A supported mood is required"}), 400
+
+    mood = mood.lower()
+    music_url = generate_ambient_track(mood)
+    return jsonify({"music_url": music_url, "mood": mood}), 200
+
 @app.route("/covers/<path:filename>")
 def serve_cover(filename):
     return send_from_directory(COVERS_DIR, filename)
+
+@app.route("/music/<path:filename>")
+def serve_music(filename):
+    music_dir = os.path.join(DATA_DIR, "music")
+    return send_from_directory(music_dir, filename)
 
 # Fallback to serve static files correctly
 @app.route("/<path:path>")

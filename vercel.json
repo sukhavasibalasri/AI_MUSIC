@@ -7,6 +7,10 @@
     {
       "source": "/covers/:path*",
       "destination": "https://ai-music-1-zmeu.onrender.com/covers/:path*"
+    },
+    {
+      "source": "/music/:path*",
+      "destination": "https://ai-music-1-zmeu.onrender.com/music/:path*"
     }
   ]
 }

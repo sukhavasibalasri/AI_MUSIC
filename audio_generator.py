@@ -1,102 +1,125 @@
-import struct
 import math
-import random
 import os
+import secrets
+import struct
 
-# Ensure backend/music directory exists
-MUSIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "covers")
 
-def generate_ambient_track(mood, filename_prefix="music"):
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MUSIC_DIR = os.path.join(
+    os.path.abspath(os.environ.get("APP_DATA_DIR", BASE_DIR)),
+    "music"
+)
+
+MOOD_TRACKS = {
+    "happy": {
+        "tempo": 112,
+        "subdivision": 2,
+        "progression": [
+            (261.63, 329.63, 392.00),
+            (220.00, 261.63, 329.63),
+            (174.61, 220.00, 261.63),
+            (196.00, 246.94, 293.66),
+        ],
+        "melody": (523.25, 587.33, 659.25, 783.99, 659.25, 587.33, 523.25, 392.00),
+    },
+    "sad": {
+        "tempo": 68,
+        "subdivision": 1,
+        "progression": [
+            (220.00, 261.63, 329.63),
+            (196.00, 246.94, 293.66),
+            (174.61, 220.00, 261.63),
+            (196.00, 233.08, 293.66),
+        ],
+        "melody": (440.00, 392.00, 349.23, 329.63, 293.66, 329.63, 392.00, 349.23),
+    },
+    "relaxed": {
+        "tempo": 76,
+        "subdivision": 1,
+        "progression": [
+            (293.66, 349.23, 440.00),
+            (261.63, 329.63, 392.00),
+            (220.00, 293.66, 349.23),
+            (246.94, 293.66, 369.99),
+        ],
+        "melody": (587.33, 523.25, 440.00, 392.00, 440.00, 523.25, 493.88, 440.00),
+    },
+    "romantic": {
+        "tempo": 84,
+        "subdivision": 1,
+        "progression": [
+            (174.61, 220.00, 261.63),
+            (196.00, 246.94, 293.66),
+            (146.83, 196.00, 246.94),
+            (164.81, 220.00, 261.63),
+        ],
+        "melody": (523.25, 493.88, 440.00, 392.00, 440.00, 493.88, 587.33, 523.25),
+    },
+    "energetic": {
+        "tempo": 128,
+        "subdivision": 2,
+        "progression": [
+            (329.63, 415.30, 493.88),
+            (261.63, 329.63, 392.00),
+            (293.66, 369.99, 440.00),
+            (220.00, 277.18, 329.63),
+        ],
+        "melody": (659.25, 783.99, 987.77, 783.99, 880.00, 783.99, 659.25, 493.88),
+    },
+}
+
+
+def generate_ambient_track(mood):
+    mood = mood.lower()
+    if mood not in MOOD_TRACKS:
+        raise ValueError(f"Unsupported music mood: {mood}")
+
     os.makedirs(MUSIC_DIR, exist_ok=True)
-    
-    # CD quality: 22050Hz (lower sample rate to keep file size lightweight for transfer), 16-bit mono
+    preset = MOOD_TRACKS[mood]
     sample_rate = 22050
-    duration = 12.0 # 12 seconds of ambient music
+    duration = 16.0
     num_samples = int(sample_rate * duration)
-    
-    # Frequencies for chords based on mood
-    mood_frequencies = {
-        "happy": [261.63, 329.63, 392.00, 523.25],       # C Major chord (C4, E4, G4, C5)
-        "sad": [220.00, 261.63, 329.63, 440.00],         # A Minor chord (A3, C4, E4, A4)
-        "relaxed": [293.66, 349.23, 440.00, 523.25],     # D Minor 7 chord (D4, F4, A4, C5)
-        "romantic": [174.61, 220.00, 261.63, 329.63],    # F Major 7 chord (F3, A3, C4, E4)
-        "energetic": [329.63, 493.88, 659.25, 830.61]    # E Major chord (E4, B4, E5, G#5)
-    }
-    
-    freqs = mood_frequencies.get(mood.lower(), mood_frequencies["relaxed"])
-    audio_data = []
-    
-    for i in range(num_samples):
-        t = i / sample_rate
-        
-        # Detuned Chorus effect synth pad
-        pad_sample = 0.0
-        for idx, f in enumerate(freqs):
-            # Base sine wave
-            osc = math.sin(2 * math.pi * f * t)
-            
-            # Detuned oscillators for warmth and thickness
-            detune_factor = 1.004 + (idx * 0.001)
-            detune_osc = math.sin(2 * math.pi * (f * detune_factor) * t)
-            
-            # Ambient arpeggiator step (subtle volume pulse on chord notes)
-            arp_speed = 4.0 if mood.lower() == "energetic" else (1.5 if mood.lower() == "happy" else 0.5)
-            arp_val = 0.5 + 0.5 * math.sin(2 * math.pi * arp_speed * t + idx)
-            
-            pad_sample += (0.6 * osc + 0.4 * detune_osc) * arp_val
-            
-        pad_sample /= len(freqs) # Normalize mix
-        
-        # Volume swell LFO (slow atmospheric pulse)
-        lfo_speed = 0.35 if mood.lower() == "energetic" else 0.15
-        lfo = 0.7 + 0.3 * math.sin(2 * math.pi * lfo_speed * t)
-        
-        # ADSR Envelope for track bounds
-        envelope = 1.0
-        if t < 2.0:
-            envelope = t / 2.0  # Slow attack fade-in
-        elif t > (duration - 2.0):
-            envelope = (duration - t) / 2.0  # Slow release fade-out
-            
-        sample = pad_sample * lfo * envelope
-        
-        # Convert to 16-bit signed integer (-32768 to 32767)
-        int_sample = int(sample * 16000)
-        audio_data.append(int_sample)
-        
-    # Build WAV header
-    header = b'RIFF'
-    header += b'\x00\x00\x00\x00' # Placeholder for total file size
-    header += b'WAVE'
-    header += b'fmt '
-    # Subchunk size (16), AudioFormat (1=PCM), NumChannels (1=Mono), SampleRate (22050), ByteRate, BlockAlign (2), BitsPerSample (16)
-    header += struct.pack('<IHHIIHH', 16, 1, sample_rate, sample_rate * 2, 2, 16)
-    header += b'data'
-    header += b'\x00\x00\x00\x00' # Placeholder for data chunk size
-    
-    # Pack PCM data
-    raw_data = bytearray()
-    for s in audio_data:
-        raw_data.extend(struct.pack('<h', s))
-        
-    # Patch header sizes
-    data_size = len(raw_data)
-    file_size = 36 + data_size
-    
-    header = bytearray(header)
-    header[4:8] = struct.pack('<I', file_size)
-    header[40:44] = struct.pack('<I', data_size)
-    
-    # Save file
-    filename = f"{filename_prefix}_{mood}_{int(random.random() * 1000000)}.wav"
-    save_path = os.path.join(MUSIC_DIR, filename)
-    with open(save_path, 'wb') as f:
-        f.write(header)
-        f.write(raw_data)
-        
-    return f"/covers/{filename}"
+    beat_duration = 60.0 / preset["tempo"]
+    note_duration = beat_duration / preset["subdivision"]
+    pcm_data = bytearray()
+
+    for index in range(num_samples):
+        time = index / sample_rate
+        beat = time / beat_duration
+        chord = preset["progression"][int(beat // 4) % len(preset["progression"])]
+        melody_index = int(time / note_duration) % len(preset["melody"])
+        melody_phase = (time % note_duration) / note_duration
+
+        pad = sum(
+            math.sin(2 * math.pi * frequency * time) * 0.7
+            + math.sin(2 * math.pi * frequency * 1.003 * time) * 0.3
+            for frequency in chord
+        ) / len(chord)
+        melody_envelope = min(1.0, melody_phase * 12) * max(0.0, 1.0 - melody_phase)
+        melody = math.sin(2 * math.pi * preset["melody"][melody_index] * time)
+        pulse = 0.88 + 0.12 * math.sin(2 * math.pi * time * preset["tempo"] / 240)
+
+        envelope = min(1.0, time / 1.5, (duration - time) / 1.5)
+        sample = (pad * 0.55 + melody * melody_envelope * 0.24) * pulse * max(0.0, envelope)
+        pcm_data.extend(struct.pack("<h", max(-32768, min(32767, int(sample * 22000)))))
+
+    data_size = len(pcm_data)
+    header = (
+        b"RIFF"
+        + struct.pack("<I", 36 + data_size)
+        + b"WAVEfmt "
+        + struct.pack("<IHHIIHH", 16, 1, 1, sample_rate, sample_rate * 2, 2, 16)
+        + b"data"
+        + struct.pack("<I", data_size)
+    )
+
+    filename = f"mood_{mood}_{secrets.token_hex(8)}.wav"
+    with open(os.path.join(MUSIC_DIR, filename), "wb") as track:
+        track.write(header)
+        track.write(pcm_data)
+
+    return f"/music/{filename}"
+
 
 if __name__ == "__main__":
-    print("Testing procedural audio synthesis...")
-    url = generate_ambient_track("relaxed")
-    print(f"Generated track: {url}")
+    print(f"Generated track: {generate_ambient_track('relaxed')}")

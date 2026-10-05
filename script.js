@@ -1,11 +1,3 @@
-const musicDB = {
-    happy: "happy.mp3",
-    sad: "sad.mp3",
-    romantic: "romantic.mp3",
-    relaxed: "relaxed.mp3",
-    energetic: "energetic.mp3"
-};
-
 const moodTrackTitles = {
     happy: "Sunshine Horizon",
     sad: "Melancholic Raindrops",
@@ -18,6 +10,7 @@ let selectedMood = "relaxed";
 let modelsLoaded = false;
 let isPlaying = false;
 let generatedCoverUrl = "";
+let musicRequestId = 0;
 
 // Audio & Visualizer State
 let audioCtx = null;
@@ -321,6 +314,7 @@ function setupAudioPlayerListeners() {
         isPlaying = false;
         playBtn.innerText = "▶";
     };
+    audio.loop = true;
 
     // Update Progress bar
     audio.ontimeupdate = () => {
@@ -432,21 +426,41 @@ function setupVisualizer() {
 
 // ================= GENERATING MUSIC & ALBUM ART =================
 
-function generateMusic() {
+async function generateMusic() {
     const audio = document.getElementById("audioPlayer");
-    const songUrl = musicDB[selectedMood];
-    
-    // Only reload track if it's changing
-    if (audio.src.indexOf(songUrl) === -1) {
-        audio.src = songUrl;
+    const status = document.getElementById("musicStatus");
+    const requestId = ++musicRequestId;
+    status.textContent = `Composing a ${selectedMood} soundtrack...`;
+
+    try {
+        const response = await apiFetch("/api/generate_music", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mood: selectedMood })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || "Unable to generate music.");
+        }
+        if (requestId !== musicRequestId) return;
+
+        audio.src = apiUrl(data.music_url);
         audio.load();
+        if (audioCtx && audioCtx.state === "suspended") {
+            await audioCtx.resume();
+        }
+        try {
+            await audio.play();
+            status.textContent = `Now playing: ${data.mood} mood music`;
+        } catch (error) {
+            if (error.name !== "NotAllowedError") throw error;
+            status.textContent = `Your ${data.mood} soundtrack is ready. Press play to listen.`;
+        }
+    } catch (error) {
+        if (requestId !== musicRequestId) return;
+        status.textContent = "Music generation failed. Please try again.";
+        console.error("Mood music generation error:", error);
     }
-    
-    if (audioCtx && audioCtx.state === "suspended") {
-        audioCtx.resume();
-    }
-    
-    audio.play().catch(e => console.error("Play error:", e));
 }
 
 // Composes custom album artwork based on scenario and active vibe
