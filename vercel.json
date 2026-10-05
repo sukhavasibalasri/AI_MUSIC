@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ai-music-1-zmeu.onrender.com/api/:path*"
+    },
+    {
+      "source": "/covers/:path*",
+      "destination": "https://ai-music-1-zmeu.onrender.com/covers/:path*"
+    }
+  ]
+}

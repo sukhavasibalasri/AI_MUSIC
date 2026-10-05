@@ -1,2 +1,2 @@
-// Set this to the deployed Flask backend URL when hosting the frontend separately.
+// Vercel proxies /api and /covers to Render, so keep requests same-origin for sessions.
 window.API_BASE_URL = "";

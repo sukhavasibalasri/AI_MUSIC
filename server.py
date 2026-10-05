@@ -25,7 +25,10 @@ app.config.update(
 
 allowed_origins = [
     origin.strip().rstrip("/")
-    for origin in os.environ.get("FRONTEND_ORIGINS", "").split(",")
+    for origin in os.environ.get(
+        "FRONTEND_ORIGINS",
+        "https://aimusic-coral.vercel.app"
+    ).split(",")
     if origin.strip()
 ]
 if allowed_origins:

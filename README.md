@@ -253,15 +253,14 @@ http://127.0.0.1:5000
 
 ## ☁️ Deployment (Render + Vercel)
 
-The Flask server serves frontend files from the repository root for a single-host deployment. To host the static frontend separately on Vercel and the API on Render:
+The Flask server serves frontend files from the repository root for a single-host deployment. For the configured Vercel + Render deployment:
 
 1. Deploy this repository to Render as a web service with build command `pip install -r requirements.txt` and start command `gunicorn server:app`.
-2. Set `FRONTEND_ORIGINS` on Render to the exact Vercel origin(s), comma-separated, with no path (for example, `https://your-app.vercel.app`). Set `SESSION_COOKIE_SAMESITE=None` and `SESSION_COOKIE_SECURE=true` for cross-site session cookies.
-3. Set `FLASK_SECRET_KEY` to a long, random secret. Set `GEMINI_API_KEY` if Gemini artwork is desired; without it, cover generation uses the built-in local artwork generator.
-4. Set `window.API_BASE_URL` in `api-config.js` to the Render service URL (for example, `https://your-service.onrender.com`) before deploying the static files to Vercel. Keep the trailing slash optional.
-5. For persistent SQLite data and generated artwork on Render, attach a persistent disk and set `APP_DATA_DIR` to its mount path (for example, `/var/data`). Without a persistent disk, local files may be lost when the service is replaced.
+2. Deploy the repository to Vercel. `vercel.json` proxies `/api/*` and `/covers/*` to the Render service so browser requests and session cookies remain same-origin.
+3. Set `FLASK_SECRET_KEY` to a long, random secret on Render. Set `GEMINI_API_KEY` if Gemini artwork is desired; without it, cover generation uses the built-in local artwork generator.
+4. For persistent SQLite data and generated artwork on Render, attach a persistent disk and set `APP_DATA_DIR` to its mount path (for example, `/var/data`). Without a persistent disk, local files may be lost when the service is replaced.
 
-The frontend sends credentialed API requests; Flask CORS is restricted to `FRONTEND_ORIGINS`, and Render uses secure cross-site session cookies. Some browsers block third-party cookies between separate Vercel and Render domains. If session cookies are blocked, proxy `/api/*` and `/covers/*` through the Vercel domain so the browser sees same-origin requests.
+For direct browser-to-Render API requests instead of the Vercel proxy, set `window.API_BASE_URL` in `api-config.js` to the Render service URL and configure `FRONTEND_ORIGINS` on Render as a comma-separated list of exact frontend origins. Render uses secure cross-site session cookies; some browsers block third-party cookies, so the Vercel proxy is recommended.
 
 ## 💡 Future Enhancements
 
