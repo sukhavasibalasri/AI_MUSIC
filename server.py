@@ -4,7 +4,7 @@ import secrets
 from flask_cors import CORS
 from database import init_db, create_user, verify_user, add_history, get_history, add_cover, get_covers
 from cover_generator import generate_album_cover
-from audio_generator import MOOD_SONGS, SongGenerationError, SongGenerationNotConfigured, generate_ai_song
+from audio_generator import MOOD_TRACKS, generate_mood_track
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.abspath(os.environ.get("APP_DATA_DIR", BASE_DIR))
@@ -145,19 +145,12 @@ def generate_music_api():
 
     data = request.get_json() or {}
     mood = data.get("mood")
-    if not isinstance(mood, str) or mood.lower() not in MOOD_SONGS:
+    if not isinstance(mood, str) or mood.lower() not in MOOD_TRACKS:
         return jsonify({"error": "A supported mood is required"}), 400
 
     mood = mood.lower()
-    try:
-        music_url = generate_ai_song(mood)
-    except SongGenerationNotConfigured as error:
-        return jsonify({"error": str(error)}), 503
-    except SongGenerationError as error:
-        app.logger.error("AI song generation failed for mood %s: %s", mood, error)
-        return jsonify({"error": str(error)}), 502
-
-    return jsonify({"music_url": music_url, "mood": mood}), 200
+    music_url = generate_mood_track(mood)
+    return jsonify({"music_url": music_url, "mood": mood, "instrumental": True}), 200
 
 @app.route("/covers/<path:filename>")
 def serve_cover(filename):
